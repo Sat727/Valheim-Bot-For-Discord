@@ -94,7 +94,10 @@ class ServerFeed(commands.Cog):
                     if str(line) in self.reported['valheim']:
                         continue
                     print(line)
-                    join_event = re.search(r'(\d{2}:\d{2}:\d{2}).*?from\s+([^:]+?)\s*:\s*(-?\d+)(?::\d+)?$', line)
+                    if not line.endswith('0:0'):
+                        join_event = re.search(r'(\d{2}:\d{2}:\d{2}).*?from\s+([^:]+?)\s*:\s*(-?\d+)(?::\d+)?$', line)
+                    else:
+                        join_event = None
                     leave_event = re.search(r'owner (-?\d+)', line)
                     if leave_event:
                         print("Detected leave event")
