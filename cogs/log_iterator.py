@@ -148,11 +148,13 @@ class ServerFeed(commands.Cog):
                                     password = password_search.group(1)
                                 if name_search:
                                     name = name_search.group(1)
-                        server_data = [name, password, modifiers]
+                        server_data = [name, password, modifiers, players]
+                        print(server_data)
+                        print(self.previous_data)
                         if server_data != self.previous_data:
+                            print("New data detected")
                             if name == None:
-                                print("Could not find bat file containing server information. Closing...")
-                                exit()
+                                print("Could not find bat file containing server information. Going based off config...")
                             embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green())
                             embed.add_field(name="Players",value=f"Players online {players}")
                             if password:
@@ -171,6 +173,8 @@ class ServerFeed(commands.Cog):
                             self.previous_data = server_data
                             if self.FirstTime == True:
                                 self.FirstTime = False
+                        else:
+                            print("Data is the same")
                 except Exception as e:
                     print("Something went wrong when updating status message")
                     print(e)
