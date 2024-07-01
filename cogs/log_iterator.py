@@ -28,7 +28,7 @@ class ServerFeed(commands.Cog):
         self.assign = False
         self.playfabid = 0  
         self.queuejoin = True
-        #self.fetch_logs.start()
+        self.changed = False
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -55,7 +55,7 @@ class ServerFeed(commands.Cog):
 
     async def check_log(self):
         try:
-            match = None
+            code = None
             players = None
             self.statuschannel = self.bot.get_channel(Config.STATUS_CHANNEL)
             self.activity = self.bot.get_channel(Config.ACTIVITY_CHANNEL)
@@ -79,12 +79,12 @@ class ServerFeed(commands.Cog):
             async with aiofiles.open(fp, mode="r") as f:
                 async for line in f:
                     try:
-                        players = re.search(r'now (\d+) player\(s\)', line).group(1)
+                        players = re.search(r'now (\d+) player\(s\)', line).group(1) if players != re.search(r'now (\d+) player\(s\)', line).group(1) else players
                     except Exception:
                         pass
                     try:
-                        match = re.search(r'join code (\d+)', line).group(1)
-                        self.joincode = match
+                        code = re.search(r'join code (\d+)', line).group(1)
+                        self.joincode = code
                     except Exception:
                         pass
                     if self.FirstTime == True:
@@ -103,6 +103,7 @@ class ServerFeed(commands.Cog):
                         if name in self.connected_list:
                             await self.activity.send(f"{name} has left the server!")
                             self.connected_list.remove(name)
+                            self.changed = True
                     if join_event:
                         time = join_event.group(1)
                         name = join_event.group(2)
@@ -117,46 +118,28 @@ class ServerFeed(commands.Cog):
                                 print("Updated player in database")
                                 player_data.commit()
                             await self.activity.send(f"{name} has joined the server!")
+                            self.changed = True
                         else:
                             print(f"{name} Likely died.")
-
-                    #match = re.search(regex_pattern, string)
-
 
                     if "Starting server" in line:
                             if self.last_log['valheim'] != str(line):
                                 if await self.new_logfile(fp):
                                     self.last_log['valheim'] = str(line)
                                     self.reported['valheim'] = []
-                    #try:
-                    #    self.player = re.search(r'<color=orange>(.*?)<\/color>', line).group(1)
-                    #    try:
-                    #        if self.queuejoin == True:
-                    #            await self.activity.send(f"{self.player} has joined the server")
-                    #            self.queuejoin = False
-                    #    except Exception:
-                    #        pass
-                    #except Exception:
-                    #    pass
-                    #join_match = re.search(r'Player joined', line)
-                    #leave_match = re.search(r'Player connection lost', line)  
-#   
-                    #if join_match:
-                    #    self.queuejoin = True
-                    #if leave_match:
-                    #    await self.activity.send(f"Someone has left the server")
 
                     self.reported['valheim'].append(str(line))
                 try:
-                        await self.message.edit(content=f"""
+                        if self.changed == True:
+                            await self.message.edit(content=f"""
 Server Name: Valheim Server 
 Total Players: {players if players else ''}
-Join Code: {match if match else ''}
-Password: valfam""")
+Join Code: {code if code else ''}""")
                 except Exception as e:
                     print("Something went wrong when updating status message")
                     print(e)
                 self.FirstTime = False
+                self.changed = False
         except Exception as e:
             print("An error occurred")
             print(e)
