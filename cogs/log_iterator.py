@@ -3,7 +3,7 @@ from config import Config
 import discord
 from os import kill, path
 #from utils.locations import Locations
-import aiofiles, asyncio, logging, re
+import aiofiles, asyncio, logging, re, os
 from config import Config
 import sqlite3, datetime
 from datetime import timedelta
@@ -28,7 +28,7 @@ class ServerFeed(commands.Cog):
         self.assign = False
         self.playfabid = 0  
         self.queuejoin = True
-        self.changed = False
+        self.previous_data = ''
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -59,6 +59,7 @@ class ServerFeed(commands.Cog):
             players = None
             self.statuschannel = self.bot.get_channel(Config.STATUS_CHANNEL)
             self.activity = self.bot.get_channel(Config.ACTIVITY_CHANNEL)
+            self.deathfeed = self.bot.get_channel(Config.DEATH_CHANNEL)
             if len(data.execute("SELECT * FROM initialized").fetchall()) == 0:
                 print("Initializing")
                 message = await self.statuschannel.send("Initializing bot...")
@@ -103,12 +104,11 @@ class ServerFeed(commands.Cog):
                         if name in self.connected_list:
                             await self.activity.send(f"{name} has left the server!")
                             self.connected_list.remove(name)
-                            self.changed = True
                     if join_event:
                         time = join_event.group(1)
                         name = join_event.group(2)
+                        id = join_event.group(3)
                         if name not in self.connected_list:
-                            id = join_event.group(3)
                             self.connected_list.append(name)
                             if len(data.execute("SELECT * FROM playerdata WHERE name = ?", (name,)).fetchall()) < 1:
                                 data.execute("INSERT INTO playerdata (id, name, deaths, timeplayed) VALUES (?, ?, ?, ?)", (id, name, 0, int(datetime.datetime.now().timestamp())))
@@ -116,11 +116,12 @@ class ServerFeed(commands.Cog):
                             else:
                                 data.execute("UPDATE playerdata SET id = ? WHERE name = ?", (id, name))
                                 print("Updated player in database")
-                                player_data.commit()
+                            player_data.commit()
                             await self.activity.send(f"{name} has joined the server!")
-                            self.changed = True
                         else:
-                            print(f"{name} Likely died.")
+                            data.execute('UPDATE playerdata SET deaths = deaths + 1 WHERE id = ?', (id,))
+                            await self.deathfeed.send(f"{name} died!")
+                            player_data.commit()
 
                     if "Starting server" in line:
                             if self.last_log['valheim'] != str(line):
@@ -130,16 +131,48 @@ class ServerFeed(commands.Cog):
 
                     self.reported['valheim'].append(str(line))
                 try:
-                        if self.changed == True:
-                            await self.message.edit(content=f"""
-Server Name: Valheim Server 
-Total Players: {players if players else ''}
-Join Code: {code if code else ''}""")
+                        # To get password, open the only bat file in the directory, and read the password if it exists.
+                        file = None
+                        for i in os.listdir('./'):
+                            if i.endswith('.bat'):
+                                file = i
+                        password = None
+                        name = None
+                        for i in open(file).readlines():
+                            #print(i)
+                            if str(i).startswith('valheim_server'):
+                                modifiers = re.findall(r'-modifier\s+(\w+\s+\w+)', i)
+                                name_search = re.search(r'-name\s+"([^"]+)"', i)
+                                password_search = re.search(r'-password\s+"([^"]+)"', i)
+                                if password_search:
+                                    password = password_search.group(1)
+                                if name_search:
+                                    name = name_search.group(1)
+                        server_data = [name, password, modifiers]
+                        if server_data != self.previous_data:
+                            if name == None:
+                                print("Could not find bat file containing server information. Going based off config...")
+                            embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green())
+                            embed.add_field(name="Players",value=f"Players online {players}")
+                            if password:
+                                embed.add_field("Password: ",value=password)
+                            if modifiers:
+                                modifier_data = ''
+                                for i in modifiers:
+                                    temp_data = i.split(' ')
+                                    modifier_data += f'```{temp_data[0]}: {temp_data[1]}\n```'
+                                embed.add_field(name="Modifier Data",value=modifier_data)
+                            #content = f"Server Name: {server_data[0] if server_data[0] else Config.SERVER_NAME}\nTotal Players: {players if players else ''}\nJoin Code: {code if code else ''}{'|backspace|Password:  '+ server_data[1] if server_data[1] else ''}".replace('|backspace|','\n')
+                            #print(self.message.content)
+                            #print(content)
+                            await self.message.edit(embed=embed, content=None)
+                            print("Updated status message")
+                            self.previous_data = server_data
+                            if self.FirstTime == True:
+                                self.FirstTime = False
                 except Exception as e:
                     print("Something went wrong when updating status message")
                     print(e)
-                self.FirstTime = False
-                self.changed = False
         except Exception as e:
             print("An error occurred")
             print(e)
