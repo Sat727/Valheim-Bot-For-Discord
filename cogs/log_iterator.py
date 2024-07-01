@@ -66,17 +66,17 @@ class ServerFeed(commands.Cog):
                 data.execute("INSERT INTO initialized (message_id) VALUES (?)", (message.id,))
                 print("Initialized message ID")
                 player_data.commit()
-            else:
-                print("Message already initialized")
+            #else:
+                #print("Message already initialized")
             self.message = await self.statuschannel.fetch_message(data.execute("SELECT * FROM initialized").fetchone()[0])
-            logging.info(f"Checking logfile")
+            #logging.info(f"Checking logfile")
             fp = path.abspath(
                 path.join(path.dirname(__file__), "..", "logs", "server_log.txt")
             )
 
             if 'valheim' not in self.reported:
                 self.reported['valheim'] = []
-            print(fp)
+            #print(fp)
             async with aiofiles.open(fp, mode="r") as f:
                 async for line in f:
                     try:
