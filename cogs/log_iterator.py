@@ -151,7 +151,8 @@ class ServerFeed(commands.Cog):
                         server_data = [name, password, modifiers]
                         if server_data != self.previous_data:
                             if name == None:
-                                print("Could not find bat file containing server information. Going based off config...")
+                                print("Could not find bat file containing server information. Closing...")
+                                exit()
                             embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green())
                             embed.add_field(name="Players",value=f"Players online {players}")
                             if password:
