@@ -88,7 +88,7 @@ class ServerFeed(commands.Cog):
                     if str(line) in self.reported['valheim']:
                         continue
 
-                    if 'Game server connected' in line & self.FirstTime == False:
+                    if 'Game server connected' in line and self.FirstTime == False:
                         print("Server restart detected, resetting class values")
                         self.FirstTime = True
                     print(line)
