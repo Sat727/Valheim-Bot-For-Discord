@@ -18,17 +18,11 @@ class ServerFeed(commands.Cog):
         self.reported = {}
         self.last_log = {}
         self.FirstTime = True
-        self.server_iterator = 0
         self.testing = False
-        self.joincode = None
-        self.player = ''
-        self.players = 0
-        self.connected_list = []
         logging.basicConfig(level=logging.INFO)
-        self.assign = False
-        self.playfabid = 0  
         self.queuejoin = True
         self.previous_data = []
+        self.modifiers, self.name, self.password, self.previous_data, self.queuejoin, self.connected_list, self.players, self.joincode = None, None, None, [],  None, [], 0, None
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -93,6 +87,9 @@ class ServerFeed(commands.Cog):
 
                     if str(line) in self.reported['valheim']:
                         continue
+
+                    if 'Game server connected' in line:
+                        self.FirstTime = True
                     print(line)
                     if ': 0:0' not in line:
                         join_event = re.search(r'(\d{2}:\d{2}:\d{2}).*?from\s+([^:]+?)\s*:\s*(-?\d+)(?::\d+)?$', line)
@@ -142,23 +139,24 @@ class ServerFeed(commands.Cog):
                                 file = i
                         password = None
                         name = None
-                        for i in open(file).readlines():
-                            #print(i)
-                            if str(i).startswith('valheim_server'):
-                                modifiers = re.findall(r'-modifier\s+(\w+\s+\w+)', i)
-                                name_search = re.search(r'-name\s+"([^"]+)"', i)
-                                password_search = re.search(r'-password\s+"([^"]+)"', i)
-                                if password_search:
-                                    password = password_search.group(1)
-                                if name_search:
-                                    name = name_search.group(1)
-                        server_data = [name, password, modifiers, players, list(self.connected_list)]
+                        if self.FirstTime == True:
+                            for i in open(file).readlines():
+                                #print(i)
+                                if str(i).startswith('valheim_server'):
+                                    self.modifiers = re.findall(r'-modifier\s+(\w+\s+\w+)', i)
+                                    name_search = re.search(r'-name\s+"([^"]+)"', i)
+                                    password_search = re.search(r'-password\s+"([^"]+)"', i)
+                                    if password_search:
+                                        self.password = password_search.group(1)
+                                    if name_search:
+                                        self.name = name_search.group(1)
+                        server_data = [self.name, self.password, self.modifiers, players, list(self.connected_list)]
                         print(server_data)
                         print(self.previous_data)
                         if server_data != self.previous_data:
                             modifier_data = ''
                             print("New data detected")
-                            if name == None:
+                            if self.name == None:
                                 print("Could not find bat file containing server information. Going based off config...")
                             embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green())
                             if len(self.connected_list) >= 1:
@@ -170,9 +168,9 @@ class ServerFeed(commands.Cog):
                             embed.add_field(name="Players",value=string_value)
                             if password:
                                 embed.add_field("Password: ",value=password)
-                            if modifiers:
+                            if self.modifiers:
                                 modifier_data = ''
-                                for i in modifiers:
+                                for i in self.modifiers:
                                     temp_data = i.split(' ')
                                     modifier_data += f'```{temp_data[0]}: {temp_data[1]}\n```'
                                 embed.add_field(name="Modifier Data",value=modifier_data)
