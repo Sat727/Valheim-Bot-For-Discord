@@ -28,7 +28,7 @@ class ServerFeed(commands.Cog):
         self.assign = False
         self.playfabid = 0  
         self.queuejoin = True
-        self.previous_data = ''
+        self.previous_data = []
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -94,7 +94,7 @@ class ServerFeed(commands.Cog):
                     if str(line) in self.reported['valheim']:
                         continue
                     print(line)
-                    if not line.endswith('0:0'):
+                    if ': 0:0' not in line:
                         join_event = re.search(r'(\d{2}:\d{2}:\d{2}).*?from\s+([^:]+?)\s*:\s*(-?\d+)(?::\d+)?$', line)
                     else:
                         join_event = None
@@ -113,6 +113,7 @@ class ServerFeed(commands.Cog):
                         id = join_event.group(3)
                         if name not in self.connected_list:
                             self.connected_list.append(name)
+                            print("Added new user to online list")
                             if len(data.execute("SELECT * FROM playerdata WHERE name = ?", (name,)).fetchall()) < 1:
                                 data.execute("INSERT INTO playerdata (id, name, deaths, timeplayed) VALUES (?, ?, ?, ?)", (id, name, 0, int(datetime.datetime.now().timestamp())))
                                 print("Appended new user to database")
@@ -151,15 +152,22 @@ class ServerFeed(commands.Cog):
                                     password = password_search.group(1)
                                 if name_search:
                                     name = name_search.group(1)
-                        server_data = [name, password, modifiers, players]
+                        server_data = [name, password, modifiers, players, list(self.connected_list)]
                         print(server_data)
                         print(self.previous_data)
                         if server_data != self.previous_data:
+                            modifier_data = ''
                             print("New data detected")
                             if name == None:
                                 print("Could not find bat file containing server information. Going based off config...")
                             embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green())
-                            embed.add_field(name="Players",value=f"Players online {players}")
+                            if len(self.connected_list) >= 1:
+                                for i in self.connected_list:
+                                    modifier_data += f'\n```{i}```'
+                            print(self.connected_list)
+                            string_value = f'Players online {players}{modifier_data}' if len(self.connected_list) >= 1 else f"Players online {players}"
+                            print(string_value)
+                            embed.add_field(name="Players",value=string_value)
                             if password:
                                 embed.add_field("Password: ",value=password)
                             if modifiers:
@@ -168,12 +176,13 @@ class ServerFeed(commands.Cog):
                                     temp_data = i.split(' ')
                                     modifier_data += f'```{temp_data[0]}: {temp_data[1]}\n```'
                                 embed.add_field(name="Modifier Data",value=modifier_data)
+                            modifier_data = ''
+                            self.previous_data = server_data
                             #content = f"Server Name: {server_data[0] if server_data[0] else Config.SERVER_NAME}\nTotal Players: {players if players else ''}\nJoin Code: {code if code else ''}{'|backspace|Password:  '+ server_data[1] if server_data[1] else ''}".replace('|backspace|','\n')
                             #print(self.message.content)
                             #print(content)
                             await self.message.edit(embed=embed, content=None)
                             print("Updated status message")
-                            self.previous_data = server_data
                             if self.FirstTime == True:
                                 self.FirstTime = False
                         else:
