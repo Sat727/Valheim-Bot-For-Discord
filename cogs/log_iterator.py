@@ -60,17 +60,13 @@ class ServerFeed(commands.Cog):
                 data.execute("INSERT INTO initialized (message_id) VALUES (?)", (message.id,))
                 print("Initialized message ID")
                 player_data.commit()
-            #else:
-                #print("Message already initialized")
             self.message = await self.statuschannel.fetch_message(data.execute("SELECT * FROM initialized").fetchone()[0])
-            #logging.info(f"Checking logfile")
             fp = path.abspath(
                 path.join(path.dirname(__file__), "..", "logs", "server_log.txt")
             )
 
             if 'valheim' not in self.reported:
                 self.reported['valheim'] = []
-            #print(fp)
             async with aiofiles.open(fp, mode="r") as f:
                 async for line in f:
                     try:
@@ -182,15 +178,10 @@ class ServerFeed(commands.Cog):
                                 embed.add_field(name="Modifier Data",value=modifier_data)
                             modifier_data = ''
                             self.previous_data = server_data
-                            #content = f"Server Name: {server_data[0] if server_data[0] else Config.SERVER_NAME}\nTotal Players: {players if players else ''}\nJoin Code: {code if code else ''}{'|backspace|Password:  '+ server_data[1] if server_data[1] else ''}".replace('|backspace|','\n')
-                            #print(self.message.content)
-                            #print(content)
                             await self.message.edit(embed=embed, content=None)
                             print("Updated status message")
                             if self.FirstTime == True:
                                 self.FirstTime = False
-                        else:
-                            print("Data is the same")
                 except Exception as e:
                     print("Something went wrong when updating status message")
                     print(e)
