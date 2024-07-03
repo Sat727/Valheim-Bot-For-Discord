@@ -90,7 +90,7 @@ class ServerFeed(commands.Cog):
 
                     if 'Game server connected' in line and self.FirstTime == False:
                         print("Server restart detected, resetting class values")
-                        self.FirstTime, self.connected_list, self.previous_data = True, [], []
+                        self.FirstTime, self.connected_list, self.previous_data, self.offline = True, [], [], False
                     print(line)
                     if ': 0:0' not in line:
                         join_event = re.search(r'(\d{2}:\d{2}:\d{2}).*?from\s+([^:]+?)\s*:\s*(-?\d+)(?::\d+)?$', line)
@@ -108,7 +108,7 @@ class ServerFeed(commands.Cog):
                     if 'Memory Statistics:' in line:
                         print("Detected server shutdown")
                         # TODO Update message embed to red, and read as offline.
-                        self.previous_data[0] += '- Offline'
+                        self.previous_data[0] += ' - Offline'
                         self.offline = True
                     if join_event:
                         time = join_event.group(1)
