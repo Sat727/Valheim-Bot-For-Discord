@@ -22,7 +22,7 @@ class ServerFeed(commands.Cog):
         logging.basicConfig(level=logging.INFO)
         self.queuejoin = True
         self.previous_data = []
-        self.modifiers, self.name, self.password, self.previous_data, self.queuejoin, self.connected_list, self.players, self.joincode = None, None, None, [],  None, [], 0, None
+        self.modifiers, self.name, self.password, self.previous_data, self.queuejoin, self.connected_list, self.players, self.joincode, self.offline = None, None, None, [],  None, [], 0, None, False
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -108,6 +108,8 @@ class ServerFeed(commands.Cog):
                     if 'Memory Statistics:' in line:
                         print("Detected server shutdown")
                         # TODO Update message embed to red, and read as offline.
+                        self.previous_data[0] += '- Offline'
+                        self.offline = True
                     if join_event:
                         time = join_event.group(1)
                         name = join_event.group(2)
@@ -143,7 +145,7 @@ class ServerFeed(commands.Cog):
                                 file = i
                         password = None
                         name = None
-                        if self.FirstTime == True:
+                        if self.FirstTime == True or self.offline == True:
                             for i in open(file).readlines():
                                 #print(i)
                                 if str(i).startswith('valheim_server'):
@@ -162,7 +164,7 @@ class ServerFeed(commands.Cog):
                             print("New data detected")
                             if self.name == None:
                                 print("Could not find bat file containing server information. Going based off config...")
-                            embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green())
+                            embed = discord.Embed(title=server_data[0], description=f'Join code: ' + code if code else '', color=discord.Color.green() if self.offline == False else discord.Color.red())
                             if len(self.connected_list) >= 1:
                                 for i in self.connected_list:
                                     modifier_data += f'\n```{i}```'
