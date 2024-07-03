@@ -153,8 +153,6 @@ class ServerFeed(commands.Cog):
                                     if name_search:
                                         self.name = name_search.group(1)
                         server_data = [self.name, self.password, self.modifiers, players, list(self.connected_list)]
-                        print(server_data)
-                        print(self.previous_data)
                         if server_data != self.previous_data:
                             modifier_data = ''
                             print("New data detected")
@@ -164,7 +162,6 @@ class ServerFeed(commands.Cog):
                             if len(self.connected_list) >= 1:
                                 for i in self.connected_list:
                                     modifier_data += f'\n```{i}```'
-                            print(self.connected_list)
                             string_value = f'Players online {players}{modifier_data}' if len(self.connected_list) >= 1 else f"Players online {players}"
                             print(string_value)
                             embed.add_field(name="Players",value=string_value)
