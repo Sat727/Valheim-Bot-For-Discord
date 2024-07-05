@@ -162,7 +162,7 @@ class ServerFeed(commands.Cog):
                             if len(self.connected_list) >= 1:
                                 for i in self.connected_list:
                                     modifier_data += f'\n```{i}```'
-                            string_value = f'Players online {players}{modifier_data}' if len(self.connected_list) >= 1 else f"Players online {players}"
+                            string_value = f'Players online {players}{modifier_data}' if len(self.connected_list) >= 1 else f"Players online: {players}"
                             print(string_value)
                             embed.add_field(name="Players",value=string_value)
                             if password:
